@@ -1,0 +1,4 @@
+click
+cssselect
+lxml
+requests

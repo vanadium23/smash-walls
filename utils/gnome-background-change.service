@@ -1,0 +1,10 @@
+[Unit]
+Description=Rotate GNOME background
+ 
+[Service]
+Type=oneshot
+Environment=DISPLAY=:0
+ExecStart=/usr/bin/bash $HOME/.config/systemd/user/rotate_walls.sh
+ 
+[Install]
+WantedBy=basic.target
