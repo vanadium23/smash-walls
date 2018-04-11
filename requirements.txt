@@ -1,4 +1,0 @@
-click
-cssselect
-lxml
-requests

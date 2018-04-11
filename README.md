@@ -2,17 +2,22 @@
 cli tool for downloading wallpapers from smashing magazine
 
 
-## INSTALLATION
+## Installation
+
+### Build from source
 
 ```
-$ git clone git@github.com:vanadium23/smash-walls.git
-# sudo if you want to install systemwide
-$ [sudo] pip install -e .
-# see list of availible params
-$ smashwalls --help
+git clone git@github.com:vanadium23/smash-walls.git
+cd smash-walls/
+go get "golang.org/x/net/html"
+go build smash-walls.go
 ```
 
-## BONUS
+### Grab a release
+
+TBA
+
+## Bonus
 If you're on systemd + gnome 3 based distro, than you can use rotate script from _utils_ folder.
 Installation steps:
 
