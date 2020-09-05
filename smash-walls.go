@@ -10,7 +10,6 @@ import (
 	"path"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,7 +20,7 @@ const (
 	smashingMagazineURLFirstPage = "https://www.smashingmagazine.com/category/wallpapers/"
 	smashingMagazineURLTpl       = "https://www.smashingmagazine.com/category/wallpapers/page/%d/"
 	wallpaperPageURLPartTpl      = "%s-%02d"                      // {month}-{year}, e.g.: october-2016
-	maxScapedPages               = 10                             // fairly chosed by random
+	maxScapedPages               = 13                             // fairly chosed by random
 	wallpaperURLPatternTpl       = "%s.*%s\\.(jpg|jpeg|png|gif)$" // {cal or nocal}-{resolution}.{extension}
 )
 
@@ -96,8 +95,6 @@ func findURLsInPage(url string, pattern string) (urls []string) {
 	for {
 		tt := z.Next()
 
-		// fmt.Println(tt.String())
-
 		switch {
 		case tt == html.ErrorToken:
 			// End of the document, we're done
@@ -111,15 +108,11 @@ func findURLsInPage(url string, pattern string) (urls []string) {
 				continue
 			}
 
-			// fmt.Println(t.String())
-
 			// Extract the href value, if there is one
 			ok, href := getHref(t)
 			if !ok {
 				continue
 			}
-			// fmt.Println(url)
-
 			// Make sure the url begines in http**
 			neededURL, _ := regexp.MatchString(pattern, href)
 			// log.Println(neededURL, err, pattern, href)
@@ -128,7 +121,6 @@ func findURLsInPage(url string, pattern string) (urls []string) {
 			}
 		}
 	}
-	return
 }
 
 func findWallpaperURL(year int, monthName string) (url string) {
@@ -149,6 +141,13 @@ func findWallpaperURL(year int, monthName string) (url string) {
 }
 
 func main() {
+	var (
+		year       int
+		month      int
+		resolution string
+		nocal      bool
+	)
+
 	// TODO: check path
 	basePicturesDirectory := path.Join(userHomeDir(), "Pictures", "Smashing-Wallpapers")
 
@@ -156,31 +155,40 @@ func main() {
 	currentYear, currentMonth, _ := time.Now().UTC().Date()
 
 	// CLI flags
-	yearPtr := flag.Int("year", currentYear, "Specify year, default to current")
-	monthPtr := flag.Int("month", int(currentMonth), "Specify month, default to current")
-	resolutionPtr := flag.String("resolution", "1920x1080", "Specify wallpaper resolution")
-	noCalPtr := flag.Bool("nocal", false, "Download wallpapers without calendars")
+	flag.IntVar(&year, "year", currentYear, "Specify year, default to current")
+	flag.IntVar(&year, "y", currentYear, "Specify year, default to current (shorthand)")
+	flag.IntVar(&month, "month", int(currentMonth), "Specify month, default to current")
+	flag.IntVar(&month, "m", int(currentMonth), "Specify month, default to current (shorthand)")
+	flag.StringVar(&resolution, "resolution", "1920x1080", "Specify wallpaper resolution")
+	flag.StringVar(&resolution, "r", "1920x1080", "Specify wallpaper resolution (shorthand)")
+	flag.BoolVar(&nocal, "nocal", false, "Download wallpapers without calendars")
 	flag.Parse()
 
-	// TODO: walidate params
+	if year < 2012 {
+		log.Println("Year need to be greater than 2012")
+		return
+	}
+	if month < 1 && month > 12 {
+		log.Println("Month valid range is 1..12")
+	}
+	// TODO: validate resolution
 
-	log.Println("Start program with params: year", *yearPtr, "month", *monthPtr, "resolution", *resolutionPtr, "nocal", *noCalPtr)
-	month := time.Month(*monthPtr)
-	monthName := strings.ToLower(month.String())
-	monthNumber := fmt.Sprintf("%02d", *monthPtr)
+	log.Println("Start program with params: year", year, "month", month, "resolution", resolution, "nocal", nocal)
+	monthName := strings.ToLower(time.Month(month).String())
 
 	log.Println("Start to find wallpaper url")
 
-	wallpaperURL := findWallpaperURL(*yearPtr, monthName)
+	wallpaperURL := findWallpaperURL(year, monthName)
 	wallpaperURL = fmt.Sprintf("https://www.smashingmagazine.com%s", wallpaperURL)
 
 	log.Println("Found wallpaper url", wallpaperURL)
 
-	picturesDirectory := path.Join(basePicturesDirectory, strconv.Itoa(*yearPtr), monthNumber)
+	subPath := fmt.Sprintf("%d.%02d", year, month)
+	picturesDirectory := path.Join(basePicturesDirectory, subPath)
 	os.MkdirAll(picturesDirectory, 0777)
 	log.Println("Will download to directory", picturesDirectory)
 
-	wallpaperURLPattern := fmt.Sprintf(wallpaperURLPatternTpl, "[^o]cal", *resolutionPtr)
+	wallpaperURLPattern := fmt.Sprintf(wallpaperURLPatternTpl, "[^o]cal", resolution)
 	wallpapersToDownload := findURLsInPage(wallpaperURL, wallpaperURLPattern)
 	for i := 0; i < len(wallpapersToDownload); i++ {
 		downloadFromURL(wallpapersToDownload[i], picturesDirectory)
