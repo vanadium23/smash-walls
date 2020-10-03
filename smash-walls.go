@@ -11,6 +11,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/net/html"
@@ -190,9 +191,15 @@ func main() {
 
 	wallpaperURLPattern := fmt.Sprintf(wallpaperURLPatternTpl, "[^o]cal", resolution)
 	wallpapersToDownload := findURLsInPage(wallpaperURL, wallpaperURLPattern)
+	wg := new(sync.WaitGroup)
+	wg.Add(len(wallpapersToDownload))
 	for i := 0; i < len(wallpapersToDownload); i++ {
-		downloadFromURL(wallpapersToDownload[i], picturesDirectory)
+		go func(i int) {
+			downloadFromURL(wallpapersToDownload[i], picturesDirectory)
+			wg.Done()
+		}(i)
 	}
+	wg.Wait()
 
 	log.Println("Download completed")
 }
